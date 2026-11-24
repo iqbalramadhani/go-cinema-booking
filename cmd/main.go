@@ -1,9 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/iqbalramadhani/go-cinema-booking/internal/adapters/redis"
+	"github.com/iqbalramadhani/go-cinema-booking/internal/booking"
+	"github.com/iqbalramadhani/go-cinema-booking/internal/utils"
 )
 
 func main() {
@@ -11,6 +14,14 @@ func main() {
 
 	mux.HandleFunc("GET /movies", listMovies)
 	mux.Handle("GET /", http.FileServer(http.Dir("static")))
+
+	store := booking.NewRedistore(redis.NewClient("localhost:6379"))
+	svc := booking.NewService(store)
+
+	bookinghandler := booking.NewHandler(svc)
+
+	mux.HandleFunc("GET /movies/{movieID}/seats", bookinghandler.ListSeats)
+	mux.HandleFunc("POST /movies/{movieID}/seats/{seatID}/hold", bookinghandler.HoldSeat)
 
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatal(err)
@@ -25,13 +36,7 @@ var movie = []movieResponse{
 }
 
 func listMovies(w http.ResponseWriter, r *http.Request) {
-	WriteJSON(w, http.StatusOK, movie)
-}
-
-func WriteJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	utils.WriteJSON(w, http.StatusOK, movie)
 }
 
 type movieResponse struct {

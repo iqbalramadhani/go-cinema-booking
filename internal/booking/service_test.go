@@ -4,6 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/iqbalramadhani/go-cinema-booking/internal/adapters/redis"
@@ -26,10 +27,13 @@ func TestConcurrentBooking_ExactlyOneWins(t *testing.T) {
 	for i := range numGoroutines {
 		go func(userNum int) {
 			defer wg.Done()
-			err := svc.Book(Booking{
-				MovieID: "screen-1",
-				SeatID:  "A1",
-				UserID:  uuid.New().String(),
+			_, err := svc.Book(Booking{
+				MovieID:   "screen-1",
+				SeatID:    "A1",
+				UserID:    uuid.New().String(),
+				Status:    "",
+				ID:        "11",
+				ExpiresAt: time.Now(),
 			})
 			if err == nil {
 				successes.Add(1)
